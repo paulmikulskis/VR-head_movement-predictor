@@ -10,7 +10,7 @@ import h5py as h5
 ENCODER_PATH = 'encoder.pt'
 DECODER_PATH = 'decoder.pt'
 FRAMES = 300
-TRIALS = 1
+TRIALS = 1 #how many data passes 
 #File options ------------------
 name = "Rollercoaster"
 bins = [4,8]
