@@ -8,7 +8,7 @@ The way I aim to improve this is by streaming only the area in the video which i
 current field of view (FOV).  This could save dramatically on transmission, because a person's field of view is around 120 degrees horizontally, and 55 degrees vertically; only a portion of the field of view within the sphere could be transmitted and still give a full experience.
 
 
-<img align="center" height="300" src="https://qph.fs.quoracdn.net/main-qimg-a2766d8864f09f3d072cced721669f5f">
+<img align="center" height="250" src="https://qph.fs.quoracdn.net/main-qimg-a2766d8864f09f3d072cced721669f5f">
 <img align="center" height="250" src="https://i.stack.imgur.com/f2Iza.jpg">
 
 Constantly transmitting a user's field of view to and from a streaming server takes too much bandwidth in itself, so a predictive method would need to be used.  There has been a few people looking into predicting future field of view using heuristic solution, but this project is instead focused on using neural networks to learn how users move their heads while watching a 360 video.  If the network can be trained to predict frames up to 3 seconds in advance with relative accuracy, then that prediction can dictate what areas of the sphere are streamed in higher quality for a smooth experience.  The central idea is to give the network a sequence of previous head movements of where the user *has* looked, along with a saliency map corresponding to the gaze direction of each frame, and output a sequence of where the user *will* look given a the future saliency of the video.  
