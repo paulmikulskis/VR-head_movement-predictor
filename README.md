@@ -20,7 +20,7 @@ The data from this project was procured from [this](http://dash.ipv6.enstb.fr/he
 
 Before training examples can be loaded, the video being trained on must be processed for its saliency.  The way this is done is with `saliencyRecord.py`, which will look in the current directory for the video name, and output a HDF5 file representing an intensity map describing saliency of each frame of the video.  The saliency recorder downsizes the video for space reasons.  Output visualized would look like this:
 
-<img align='center' height="300" src="/images/saliency_example.png">
+<img align="center" height="300" src="/images/saliency_example.png">
 
 `hmd_procure.py` will take care of sorting through the data in the folders `./vr_hmd_test` and `./vr_hmd_train`.  Import the module then create the data grabber with   
  `grabber = hmd_procure.HMDGrabber('train')` *(specify test or train set as parameter)*, and then load all the participants' data with `participants = grabber.grabData()`
