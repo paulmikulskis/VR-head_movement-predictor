@@ -1,16 +1,10 @@
-#add other modules
-import sys
-sys.path.insert(0,'../data')
-
 import torch
 import numpy as np
+import translate
 import data
 import hmd_procure
 import cv2
 import h5py as h5
-import translate
-
-
 
 #Parameters ---------------------------------
 ENCODER_PATH = 'encoder.pt'

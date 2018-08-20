@@ -42,6 +42,25 @@ def rotate(q0,q1,q2,q3,pi = 1,pj = 0,pk = 0):
     #return (pprime[1:], math.sqrt(pprime[1]**2 + pprime[2]**2 + pprime[3]**2))
     return (pprime[1:])
 
+
+def xyToPolar(p,imgdims):
+    '''computes the polar coordinates of the position p (represents (x,y))
+    on an image of size imgdims to the unit sphere
+    '''
+
+    x = p[0]
+    y = p[1]
+
+    phi = (abs((imgdims[0] / 2) - x) / (imgdims[0] / 2)) * (math.pi)
+    if x > imgdims[0] / 2:
+        phi = (math.pi * 2) - phi
+    #theta has a 180 degree range instead of a full 360 rotation
+    theta = (abs((imgdims[1] / 2) - y) / (imgdims[1] / 2)) * (math.pi / 2)
+    if y < imgdims[1] / 2:
+        theta = (math.pi / 2) + theta
+
+    return theta, phi
+
 def equiequate(v,imgdims):
     '''computes the (x,y) coordinates of the equirectangular
     projection of the 3d vector v: [i,j,k] onto a 2d plane size w x h

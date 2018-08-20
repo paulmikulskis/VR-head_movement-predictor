@@ -118,3 +118,32 @@ class Decode(nn.Module):
 
     def initHidden(self):
         return (torch.zeros(self.num_lstm_layers, self.batch_size, self.hidden_size).cuda(), torch.zeros(self.num_lstm_layers, self.batch_size, self.hidden_size).cuda())
+
+
+'''
+Notes for integrating future frame saliency into decoder module
+
+train.py ---------
+    > 89
+        {
+            in_d = d1['saliency_prev'].shape[0] * d1['saliency_prev'].shape[1] + 4 + 2
+        }
+        to
+        {
+            in_d = d1['saliency_prev'].shape[0] * d1['saliency_prev'].shape[1] + 1 + 1
+        }
+
+    > 72 ADDED
+        {
+            movement_past = translate.convertHMDarrayToBinIDs(movement_past, BINS, IMG_DIMS)
+        }
+
+
+
+
+
+
+
+
+        
+'''

@@ -8,7 +8,7 @@ if __name__ == '__main__':
     first = True
 
     # set up webcams
-    capture = cv2.VideoCapture('8lsB-P8nGSM.mkv')
+    capture = cv2.VideoCapture('videos/8lsB-P8nGSM.mkv')
     capture.set(cv2.CAP_PROP_POS_MSEC,65000)
     # repeat until pressing a key "q"
     t = 2

@@ -1,3 +1,7 @@
+#add other modules
+import sys
+sys.path.insert(0,'../data')
+
 import data
 import h5py as h5
 import hmd_procure
@@ -20,8 +24,8 @@ print("------ begin procuring head movement data ------")
 hdfName = 'rollercoaster.h5'
 #define parameters for tensor construction:
 #number of [previous frames] used to predict the number of [future frames]
-frame_window_prev = 5
-frame_window_fut = 5
+frame_window_prev = 120
+frame_window_fut = 120
 #if printing for validation, how many samples to print
 samplePrintSize = 3
 printcheck = False
@@ -51,8 +55,6 @@ DECODER_SAVE_NAME = 'decoder.pt'
 
 # ---------- -----------------------------------------------
 IMG_DIMS = [0,0]
-
-SOS_token = np.ones((1, BATCH_SIZE, BINS[0] * BINS[1])) * -1
 #grab the HDF5 file containing the saliency map
 hdFile = h5.File("../saliency/" + hdfName, 'r')
 if hdFile is None:
@@ -62,7 +64,7 @@ else:
     print("HDF5 file '%s' sucesfully obtained" %hdfName)
 
 #load participant data, specify 'test' or 'train' for specific data
-load = 'test'
+load = 'train'
 grabber = hmd_procure.HMDGrabber(load)
 participants = grabber.grabData()
 print("loading %sing HMD with a total of %i folders" %(load, grabber.numParticipants()))
@@ -85,12 +87,13 @@ if printcheck:
     dataloader.printcheck(samplePrintSize)
 d1 = dataloader[1]
 IMG_DIMS = [d1['saliency_prev'].shape[0], d1['saliency_prev'].shape[1]]
-#input dimension length = [(w*h) + 4 + 1] = [saliency_map_dims + quaternion + age_number]
-in_d = d1['saliency_prev'].shape[0] * d1['saliency_prev'].shape[1] + 4 + 2
+
+SOS_token = np.ones((1, BATCH_SIZE, BINS[0] * BINS[1])) * -1
+#input dimension length = [(w*h) + 1 + 1] = [saliency_map_dims + binID + age_number]
+in_d = d1['saliency_prev'].shape[0] * d1['saliency_prev'].shape[1] + (BINS[0] * BINS[1]) + 0
 #initialize encoder and decoder objects
 encoder = model.Encode(ENCODER_HIDDEN_SIZE, in_d, NUM_ENCODER_LSTM_LAYERS, BATCH_SIZE).cuda()
 decoder = model.Decode(DECODER_HIDDEN_SIZE, BINS[0] * BINS[1], NUM_DECODER_LSTM_LAYERS, BATCH_SIZE, DROUPOUT_P_DECODER, MAX_LENGTH).cuda()
-
 
 def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
     '''
@@ -126,6 +129,7 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
         loss += criterion(decoder_input, idx_target)
         decoder_input = decoder_input.view(1, BATCH_SIZE, -1).detach()
 
+
     loss.backward(retain_graph=True)
     encoder_optimizer.step()
     decoder_optimizer.step()
@@ -153,13 +157,15 @@ def trainIters(encoder, decoder, n_iters, print_every = 2, plot_every = 100, lea
     print_loss_total = 0
     plot_loss_total = 0
 
-    encoder_optimizer = optim.SGD(encoder.parameters(), lr = learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr = learning_rate)
+    encoder_optimizer = optim.SGD(encoder.parameters(), lr = learning_rate)
     criterion = nn.NLLLoss()
 
     for iter in range(1, n_iters + 1):
         data = dataloader[iter]
+        #age = movement_past[0][0][4]
         movement_past = data['hmd_prev']
+        movement_past = translate.convertHMDarrayToBinIDs(movement_past, BINS, IMG_DIMS)
         movement_future = data['hmd_fut']
         saliency_prev = data['saliency_prev']
         #reshaping saliency_prev into a [seq_len x batch_size x (w * h)] array:
@@ -170,11 +176,16 @@ def trainIters(encoder, decoder, n_iters, print_every = 2, plot_every = 100, lea
             saliency_prev = np.concatenate((saliency_prev,spc),1)
 
         target_bins = translate.convertHMDarrayToBinIDs(movement_future, BINS, IMG_DIMS)
+        #the following line concatenates the previous saliency map with the previous movement
+        #the 0th dimension should be the same, being the sequence length
+        #the 1st dimension should be the same, being the batch size
+        #the 2nd dimension is the data dimension on which the arrays are concatenated
         input_data = np.concatenate((movement_past, saliency_prev), 2)
         #tensor conversion
         input_data = torch.tensor(input_data).float().cuda()
         target_bins = torch.tensor(target_bins).float().cuda()
 
+        #actual training takes place for this data item on this line
         loss = train(input_data, target_bins, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
         print_loss_total += loss
         plot_loss_total += loss

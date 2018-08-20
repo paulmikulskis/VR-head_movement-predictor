@@ -29,9 +29,9 @@ class HMDGrabber:
 
     def __init__(self, test):
         if test == 'train':
-            self.dirs = self.get_immediate_subdirectories('./vr_hmd_train/results/')
+            self.dirs = self.get_immediate_subdirectories('../data/vr_hmd_train/results/')
         elif test == 'test':
-            self.dirs = self.get_immediate_subdirectories('./vr_hmd_test/results/')
+            self.dirs = self.get_immediate_subdirectories('../data/vr_hmd_test/results/')
         else:
             print('specify test or train dataset to load HMD')
 

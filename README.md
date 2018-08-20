@@ -1,3 +1,4 @@
+
 # VR-head_movement-predictor
 ### About the Problem and Project
 This project is part of a research project, where I am trying to increase the viability
@@ -8,8 +9,8 @@ The way I aim to improve this is by streaming only the area in the video which i
 current field of view (FOV).  This could save dramatically on transmission, because a person's field of view is around 120 degrees horizontally, and 55 degrees vertically; only a portion of the field of view within the sphere could be transmitted and still give a full experience.
 
 
-<img align="left" height="250" src="https://qph.fs.quoracdn.net/main-qimg-a2766d8864f09f3d072cced721669f5f">
-<img align="right" height="250" src="https://i.stack.imgur.com/f2Iza.jpg">
+<img align="left" height="233" src="https://qph.fs.quoracdn.net/main-qimg-a2766d8864f09f3d072cced721669f5f">
+<img align="right" height="240" src="https://i.imgur.com/xCGkcao.png">
 
 Constantly transmitting a user's field of view to and from a streaming server takes too much bandwidth in itself, so a predictive method would need to be used.  There has been a few people looking into predicting future field of view using heuristic solution, but this project is instead focused on using neural networks to learn how users move their heads while watching a 360 video.  If the network can be trained to predict frames up to 3 seconds in advance with relative accuracy, then that prediction can dictate what areas of the sphere are streamed in higher quality for a smooth experience.  The central idea is to give the network a sequence of previous head movements of where the user *has* looked, along with a saliency map corresponding to the gaze direction of each frame, and output a sequence of where the user *will* look given a the future saliency of the video.  
 
@@ -20,8 +21,13 @@ The data from this project was procured from [this](http://dash.ipv6.enstb.fr/he
 
 Before training examples can be loaded, the video being trained on must be processed for its saliency.  The way this is done is with `saliencyRecord.py`, which will look in the current directory for the video name, and output a HDF5 file representing an intensity map describing saliency of each frame of the video.  The saliency recorder downsizes the video for space reasons.  Output visualized would look like this:
 
-<img align="center" height="300" src="/images/saliency_example.png">
+<img align="center" height="300" src="https://i.imgur.com/3htGIFd.png">
 
+The way I like to think of the data in my head is as follow.  Using the past *h* frames of saliency map and viewing data, and future *h* frames of saliency map, we will try to predict the future *h* frames of viewing data:
+<img align="center" height="300" src="https://i.imgur.com/AvvBMCx.png">
+
+
+#### Using the Code with the Data:
 `hmd_procure.py` will take care of sorting through the data in the folders `./vr_hmd_test` and `./vr_hmd_train`.  Import the module then create the data grabber with   
  `grabber = hmd_procure.HMDGrabber('train')` *(specify test or train set as parameter)*, and then load all the participants' data with `participants = grabber.grabData()`
 
@@ -52,19 +58,22 @@ Because this project has to do wtih 3D space and graphics to some degree, there 
 ### Understand The Data
 
 With the data loading and maths being mentioned, these ideas are all brought together in the file `rectangview.py` where you can visualize the data from the study.  This file takes in a video name, dataset (test/train), binning specs, and resize parameter (specified in settings), and displays the video frame by frame in Matplotlib, with a grid representing the binning layout.  Each frame, the participants' viewing perspectives are calculated and translated into 3D vectors, then projected onto a 2D plane, then binned accordingly.  Each bin will show more video more clearly depending on how many people are currently viewing in that direction.  
-<img align='center' height="300" src="/images/visualize.png">
+<img align='center' height="300" src="https://i.imgur.com/iW8C2g0.png">
 
 ---
 ### Neural Network Concepts
 
 This project is attempting to use an encoder/decoder paradigm using LSTM cells with the fantastic PyTorch library.  Below is described the dataflow and features of the encoder/decoder architecture.  The definition of this model can be found in `model.py`
 ##### Encoder
-   The encoder takes as input the Hamilton Quaternion representing the rotation of the user's head, the user's age, and the frame number for that recorder position, along with a saliency map for that frame of the video.  The saliency map is precomputed and stored in an HDF5 file using `saliencyRecord.py`, and is vectorized into a 1D vector *[TODO: could use convolution possibly?]*.  PyTorch takes as input to a LSTM cell a tensor of dimensions [input_seq_len x batch_size x data_size], so these features are concatenated accordingly to create the correct sized tensor.  
+   The encoder takes as input the Hamilton Quaternion representing the rotation of the user's head, the user's age, and the frame number for that recorder position, along with a saliency map for that frame of the video.  The saliency map is precomputed and stored in an HDF5 file using `saliencyRecord.py`, and is vectorized into a 1D vector.  PyTorch takes as input to a LSTM cell a tensor of dimensions [input_seq_len x batch_size x data_size], so these features are concatenated accordingly to create the correct sized tensor.  
 
   As output, the encoder produces a 'context vector' which is then fed into the decoder.
 
   ##### Decoder
    The decoder tajes in the 'context vector' from the encoder, which is supposed to embody the meaning or representation of the sequence witnessed.  The decoder then sets this context vector as its hidden state, and feeds in a *StartOfSequence* vector to begin 'decoding' the context vector.  The output from each step of the sequence of decoding is a [1 x b] array representing the amount of bins used to separate the equi-rectangular projected video.
+
+##### Model
+![enter image description here](https://i.imgur.com/EEubdLK.png)
 
    ---
 
@@ -79,7 +88,9 @@ This project is attempting to use an encoder/decoder paradigm using LSTM cells w
    ### Goals
 
    There is a lot to be done with this project.  Some of the most urgent items on the TODO list are mentioned below:
-   1. Modify the model so that the decoder takes as input not only the *StartOfSequence* vector or previous output, but also the saliency map for the future frame.  This is a core idea as to how the network will have more information available to make predictions as to where the viewer will be looking, but has not been implemented yet.  
+   1. Modify the model so that the decoder takes as input not only the *StartOfSequence* vector or previous output, but also the saliency map for the future frame.  This is a core idea as to how the network will have more information available to make predictions as to where the viewer will be looking, but has not been implemented yet.  Where should the future saliency map be fed into the mode?  Should it be considered as part of the hidden state of the Decoder LSTM cell?  Should it be encoded with everything else?  
+	  ![enter image description here](https://i.imgur.com/4brQLru.png)
+
    2. Create a visualization show visually what bins the network predicts where the user will be looking instead of soley on console, visuals are always better
    3. Start to tune the network to output meaningful results.  Investigating different layers of LSTM cells, training hyperparemeters
    4. Possibly include convolution to the input saliency map to preserve some of the spacial dependencies.  
@@ -89,7 +100,6 @@ This project is attempting to use an encoder/decoder paradigm using LSTM cells w
 ---
 
 ### Additional Notes
-- This project is large and right now is only worked on by me, but any help at all is eagerly welcomed.  
 - Depending on your computing setup, some parts of the code will need to be modified for GPU or CPU usage during training.
 - At first, I tried using a normal LSTM cell and a GRU cell to treat the sequence as a classification problem, but despite longer training times I decided an encoder/decoder paradigm would serve better for a sequence-to-sequence translation.  Thoughts on this overall architecture are very welcomed.  
 - There is a known bug occasionally with loading some data and giving `NaN` as the projected point from 3D to 2D, this is something on the TODO list to fix, this is definitley just a math issue for some edge cases.  

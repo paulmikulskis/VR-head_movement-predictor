@@ -55,9 +55,6 @@ class ShortWindowDataLoader(Dataset):
         dataset = self.dataset
         frameStart = int(random.random() * (self.nbF - (pas + fut) - 1))
         frameEnd = frameStart + pas + fut
-        print('frameStart = ', frameStart)
-        print('pas = ', pas)
-        print('nbf = ', self.nbF)
         saliency_prev = dataset[:,:,frameStart:(frameStart + pas)]
         saliency_fut = dataset[:,:,(frameStart + pas):frameEnd]
         #HMD follows the following dimensions: (seq_len x batch_size x datapoint)
